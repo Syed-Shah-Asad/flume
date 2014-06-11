@@ -2,7 +2,6 @@ package com.aamend.hadoop.flume.interceptor;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.apache.commons.lang.StringUtils;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
 import org.apache.flume.FlumeException;
@@ -20,19 +19,25 @@ import java.util.Map;
  * Author: antoine.amend@gmail.com
  * Date: 11/06/14
  */
-public class HostInterceptor implements Interceptor {
+public class CustomHostInterceptor implements Interceptor {
 
     private static final Logger LOGGER =
-            LoggerFactory.getLogger(HostInterceptor.class);
+            LoggerFactory.getLogger(CustomHostInterceptor.class);
 
     private Gson gson;
-    private String host;
+    private String hostValue;
+    private String hostHeader;
+
+    public CustomHostInterceptor(String hostHeader){
+        this.hostHeader = hostHeader;
+    }
 
     @Override
     public void initialize() {
         gson = new GsonBuilder().create();
         try {
-            host = InetAddress.getLocalHost().getHostName();
+            hostValue =
+                    InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException e) {
             LOGGER.error("Cannot get Hostname", e);
             throw new FlumeException("Cannot get Hostname", e);
@@ -52,7 +57,7 @@ public class HostInterceptor implements Interceptor {
         Map<String, String> headers = event.getHeaders();
 
         // Enrich header with hostname
-        headers.put("host", host);
+        headers.put(hostHeader, hostValue);
 
         // Update event's headers
         event.setHeaders(headers);
@@ -82,15 +87,19 @@ public class HostInterceptor implements Interceptor {
         // Nothing to close here
     }
 
-    public static class Builder implements Interceptor.Builder {
+    public static class Builder
+            implements Interceptor.Builder {
+
+        private String hostHeader;
 
         @Override
         public void configure(Context context) {
+            hostHeader = context.getString("hostHeader");
         }
 
         @Override
         public Interceptor build() {
-            return new HostInterceptor();
+            return new CustomHostInterceptor(hostHeader);
         }
     }
 }

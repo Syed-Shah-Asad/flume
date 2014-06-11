@@ -1,6 +1,5 @@
 package com.aamend.hadoop.flume.interceptor;
 
-import static junit.framework.Assert.*;
 import org.apache.flume.Event;
 import org.apache.flume.event.JSONEvent;
 import org.junit.Before;
@@ -8,32 +7,43 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
+
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 
 /**
  * Author: antoine.amend@gmail.com
  * Date: 11/06/14
  */
 @RunWith(JUnit4.class)
-public class CustomInterceptorTest {
+public class CustomHostInterceptorTest {
 
-    private static String KEY = "foo";
     private static String BODY = "this is my body";
+    private static String HOST = "host";
+
+    private String host;
     private Event event;
     private Map<String, String> headers;
-    private CustomInterceptor interceptor;
+    private CustomHostInterceptor interceptor;
 
     @Before
-    public void prepare(){
+    public void prepare()
+            throws UnknownHostException {
+
+        host = InetAddress.getLocalHost().getHostName();
 
         headers = new HashMap<String, String>(1);
-        headers.put("myKey", "myValue");
+        headers.put("existingKey", "existingValue");
+
         event = new JSONEvent();
         event.setBody(BODY.getBytes());
         event.setHeaders(headers);
 
-        interceptor = new CustomInterceptor(KEY);
+        interceptor = new CustomHostInterceptor(HOST);
         interceptor.initialize();
     }
 
@@ -47,15 +57,12 @@ public class CustomInterceptorTest {
                 BODY,
                 new String(interceptedEvent.getBody()));
 
-        assertTrue("Header should now contain custom key / value",
-                interceptedEvent.getHeaders().containsKey(KEY));
+        assertTrue("Header should now contain host",
+                interceptedEvent.getHeaders().containsKey(HOST));
 
-        for(String key : event.getHeaders().keySet()){
-            assertEquals("Existing header should not have been altered",
-                    event.getHeaders().get(key),
-                    interceptedEvent.getHeaders().get(key));
-        }
-
+        assertEquals("Header's hostname should be correct",
+                host,
+                interceptedEvent.getHeaders().get(HOST));
 
 
     }
